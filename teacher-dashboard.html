@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Teacher Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <h2>Teacher Dashboard</h2>
+  <button onclick="logout()">Logout</button>
+
+  <hr>
+
+  <h3>Meeting Requests</h3>
+  <div id="meetingsList"></div>
+
+  <script src="app.js"></script>
+  <script>
+    loadTeacherMeetings()
+  </script>
+
+</body>
+</html>

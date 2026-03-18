@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>My Meetings</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <h2>My Meetings</h2>
+  <a href="parent-dashboard.html"><button>Back to Dashboard</button></a>
+  <button onclick="logout()">Logout</button>
+
+  <hr>
+
+  <div id="meetingList"></div>
+
+  <script src="app.js"></script>
+  <script>
+    loadParentMeetings()
+  </script>
+
+</body>
+</html>

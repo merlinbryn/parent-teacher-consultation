@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login / Signup</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <h2>Signup</h2>
+
+  <input id="signupEmail" placeholder="Email">
+  <br><br>
+  <input id="signupPassword" type="password" placeholder="Password">
+  <br><br>
+  <input id="signupName" placeholder="Full Name">
+  <br><br>
+  <select id="role">
+    <option value="parent">Parent</option>
+    <option value="teacher">Teacher</option>
+  </select>
+  <br><br>
+
+  <!-- Teacher-only fields, hidden by default -->
+  <div id="teacherFields" style="display:none">
+    <input id="subject" placeholder="Subject (e.g. Math)">
+    <br><br>
+    <input id="experience" placeholder="Years of Experience">
+    <br><br>
+  </div>
+
+  <button onclick="signup()">Signup</button>
+
+  <hr>
+
+  <h2>Login</h2>
+
+  <input id="loginEmail" placeholder="Email">
+  <br><br>
+  <input id="loginPassword" type="password" placeholder="Password">
+  <br><br>
+  <button onclick="login()">Login</button>
+
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("role").addEventListener("change", function () {
+      document.getElementById("teacherFields").style.display =
+        this.value === "teacher" ? "block" : "none"
+    })
+  </script>
+
+</body>
+</html>

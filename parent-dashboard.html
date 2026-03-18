@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Parent Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+  <h2>Parent Dashboard</h2>
+  <button onclick="logout()">Logout</button>
+
+  <hr>
+
+  <h3>Add Child</h3>
+  <input id="childName" placeholder="Child Name">
+  <br><br>
+  <input id="grade" placeholder="Grade">
+  <br><br>
+  <input id="section" placeholder="Section">
+  <br><br>
+  <button onclick="addChild()">Add Child</button>
+
+  <hr>
+
+  <h3>Your Children</h3>
+  <ul id="childrenList"></ul>
+
+  <hr>
+
+  <h3>Book a Meeting</h3>
+
+  <label>Select Child:</label><br>
+  <select id="childSelect"></select>
+  <br><br>
+
+  <label>Select Teacher:</label><br>
+  <select id="teacherSelect"></select>
+  <br><br>
+
+  <input type="datetime-local" id="meetingTime">
+  <br><br>
+
+  <input id="topic" placeholder="Meeting Topic">
+  <br><br>
+
+  <button onclick="bookMeeting()">Book Meeting</button>
+
+  <hr>
+
+  <a href="parent-meetings.html"><button>View My Meetings</button></a>
+
+  <script src="app.js"></script>
+  <script>
+    loadChildren()
+    loadChildrenDropdown()
+    loadTeachers()
+  </script>
+
+</body>
+</html>
