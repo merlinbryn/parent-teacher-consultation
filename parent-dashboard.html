@@ -28,29 +28,46 @@
   <hr>
 
   <h3>Book a Meeting</h3>
-
   <label>Select Child:</label><br>
   <select id="childSelect"></select>
   <br><br>
-
   <label>Select Teacher:</label><br>
   <select id="teacherSelect"></select>
   <br><br>
-
   <input type="datetime-local" id="meetingTime">
   <br><br>
-
   <input id="topic" placeholder="Meeting Topic">
   <br><br>
-
   <button onclick="bookMeeting()">Book Meeting</button>
 
   <hr>
-
   <a href="parent-meetings.html"><button>View My Meetings</button></a>
 
   <script src="app.js"></script>
   <script>
+    // Handle Google OAuth redirect
+    (async () => {
+      const { data: { session } } = await supabaseClient.auth.getSession()
+      if (session) {
+        const { data: profile } = await supabaseClient
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single()
+
+        if (!profile) {
+          await supabaseClient
+            .from('profiles')
+            .insert([{
+              id: session.user.id,
+              email: session.user.email,
+              role: 'parent',
+              name: session.user.user_metadata.full_name
+            }])
+        }
+      }
+    })()
+
     loadChildren()
     loadChildrenDropdown()
     loadTeachers()

@@ -123,6 +123,19 @@ async function login() {
     window.location.href = "teacher-dashboard.html"
   }
 }
+async function loginWithGoogle() {
+  const { data, error } = await supabaseClient.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: 'http://localhost:5500/parent-dashboard.html'
+    }
+  })
+
+  if (error) {
+    console.log(error)
+    alert("Google login failed: " + error.message)
+  }
+}
 
 async function logout() {
   await supabaseClient.auth.signOut()
@@ -165,9 +178,16 @@ async function loadChildren() {
   const list = document.getElementById("childrenList")
   if (!list) return
 
+  // DEBUG
+  const { data: userData } = await supabaseClient.auth.getUser()
+  console.log("Current user ID:", userData.user.id)
+
   const { data, error } = await supabaseClient
     .from("children")
     .select("*")
+
+  console.log("Children data:", data)
+  console.log("Children error:", error)
 
   if (error) {
     console.log(error)
