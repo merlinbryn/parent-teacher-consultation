@@ -1,7 +1,46 @@
 const supabaseUrl = "https://rdbcetsbodhuscmaldaw.supabase.co"
 const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJkYmNldHNib2RodXNjbWFsZGF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMzODQ0MjMsImV4cCI6MjA4ODk2MDQyM30.SSzqCvj1ZnyhW74vP01UNvXM0nHxXOOvvPZcTDdHtYU"
-
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey)
+
+// =====================
+// BASE URL — all API calls go through our server
+// =====================
+const BASE_URL = 'http://localhost:3000/api'
+
+// Helper to get token from localStorage
+function getToken() {
+  return localStorage.getItem('token')
+}
+
+// Helper function for API calls
+async function apiCall(endpoint, method = 'GET', body = null) {
+  const headers = {
+    'Content-Type': 'application/json'
+  }
+
+  const token = getToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+
+  const options = {
+    method,
+    headers
+  }
+
+  if (body) {
+    options.body = JSON.stringify(body)
+  }
+
+  const response = await fetch(BASE_URL + endpoint, options)
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Something went wrong')
+  }
+
+  return data
+}
 
 // =====================
 // AUTH FUNCTIONS
@@ -12,117 +51,72 @@ async function signup() {
   const password = document.getElementById("signupPassword").value
   const role = document.getElementById("role").value
   const name = document.getElementById("signupName").value
+  const subject = role === 'teacher' ? document.getElementById("subject").value : null
+  const experience = role === 'teacher' ? document.getElementById("experience").value : null
 
-  // Step 1: Sign up
-  const { data, error } = await supabaseClient.auth.signUp({
-    email: email,
-    password: password
-  })
+  try {
+    const data = await apiCall('/auth/signup', 'POST', {
+      email, password, role, name, subject, experience
+    })
 
-  if (error) {
-    alert(error.message)
-    return
-  }
+    // Save token to localStorage
+    localStorage.setItem('token', data.session.access_token)
+    localStorage.setItem('role', data.role)
 
-  // Step 2: Immediately sign in to get active session
-  const { data: signInData, error: signInError } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password
-  })
+    alert('Signup successful!')
 
-  if (signInError) {
-    alert("Signup ok but login failed: " + signInError.message)
-    return
-  }
-
-  console.log("User ID:", signInData.user.id)
-  console.log("Session:", signInData.session)
-
-  // Step 3: Now insert profile with active session
-  const { error: profileError } = await supabaseClient
-    .from("profiles")
-    .insert([{
-      id: signInData.user.id,
-      email: email,
-      role: role,
-      name: name
-    }])
-
-  if (profileError) {
-    console.log("PROFILE ERROR:", profileError)
-    alert(profileError.message)
-    return
-  }
-
-  // Step 4: If teacher, insert into teachers table too
-  if (role === "teacher") {
-    const subject = document.getElementById("subject").value
-    const experience = document.getElementById("experience").value
-
-    const { error: teacherError } = await supabaseClient
-      .from("teachers")
-      .insert([{
-        id: signInData.user.id,
-        subject: subject,
-        experience: experience
-      }])
-
-    if (teacherError) {
-      console.log("TEACHER ERROR:", teacherError)
-      alert(teacherError.message)
-      return
+    if (data.role === 'parent') {
+      window.location.href = 'parent-dashboard.html'
+    } else {
+      window.location.href = 'teacher-dashboard.html'
     }
-  }
 
-  alert("Signup successful!")
-
-  // Step 5: Redirect based on role
-  if (role === "parent") {
-    window.location.href = "parent-dashboard.html"
-  } else {
-    window.location.href = "teacher-dashboard.html"
+  } catch (err) {
+    alert('Signup failed: ' + err.message)
+    console.log(err)
   }
-  console.log("Email:", email)
-  console.log("Password:", password)
-  console.log("Role:", role)
-  console.log("Name:", name)
 }
 
 async function login() {
   const email = document.getElementById("loginEmail").value
   const password = document.getElementById("loginPassword").value
 
-  const { data, error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password
-  })
+  try {
+    // ✅ Clear any old tokens first
+    localStorage.removeItem('token')
+    localStorage.removeItem('role')
 
-  if (error) {
-    alert("Login failed: " + error.message)
-    console.log(error)
-    return
-  }
+    const data = await apiCall('/auth/login', 'POST', { email, password })
 
-  const user = data.user
+    // Save new token
+    localStorage.setItem('token', data.session.access_token)
+    localStorage.setItem('role', data.role)
 
-  const { data: profile, error: profileError } = await supabaseClient
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single()
+    if (data.role === 'parent') {
+      window.location.href = 'parent-dashboard.html'
+    } else {
+      window.location.href = 'teacher-dashboard.html'
+    }
 
-  if (profileError) {
-    console.log("Profile fetch error:", profileError)
-    alert("Could not fetch user role")
-    return
-  }
-
-  if (profile.role === "parent") {
-    window.location.href = "parent-dashboard.html"
-  } else if (profile.role === "teacher") {
-    window.location.href = "teacher-dashboard.html"
+  } catch (err) {
+    alert('Login failed: ' + err.message)
+    console.log(err)
   }
 }
+
+async function logout() {
+  try {
+    await apiCall('/auth/logout', 'POST')
+  } catch (err) {
+    console.log(err)
+  }
+  // ✅ Clear Supabase Google session too
+  await supabaseClient.auth.signOut()
+  localStorage.removeItem('token')
+  localStorage.removeItem('role')
+  window.location.href = 'login.html'
+}
+
 async function loginWithGoogle() {
   const { data, error } = await supabaseClient.auth.signInWithOAuth({
     provider: 'google',
@@ -137,11 +131,6 @@ async function loginWithGoogle() {
   }
 }
 
-async function logout() {
-  await supabaseClient.auth.signOut()
-  window.location.href = "login.html"
-}
-
 // =====================
 // CHILDREN FUNCTIONS
 // =====================
@@ -151,79 +140,54 @@ async function addChild() {
   const grade = document.getElementById("grade").value
   const section = document.getElementById("section").value
 
-  const { data: userData } = await supabaseClient.auth.getUser()
-  const userId = userData.user.id
-
-  const { error } = await supabaseClient
-    .from("children")
-    .insert([{
-      parent_id: userId,
-      name: name,
-      grade: grade,
-      section: section
-    }])
-
-  if (error) {
-    console.log(error)
-    alert("Failed to add child: " + error.message)
-    return
+  try {
+    await apiCall('/parent/children', 'POST', { name, grade, section })
+    alert('Child added successfully!')
+    loadChildren()
+    loadChildrenDropdown()
+  } catch (err) {
+    alert('Failed to add child: ' + err.message)
+    console.log(err)
   }
-
-  alert("Child added successfully!")
-  loadChildren()
-  loadChildrenDropdown()
 }
 
 async function loadChildren() {
   const list = document.getElementById("childrenList")
   if (!list) return
 
-  // DEBUG
-  const { data: userData } = await supabaseClient.auth.getUser()
-  console.log("Current user ID:", userData.user.id)
+  try {
+    const data = await apiCall('/parent/children')
+    list.innerHTML = ""
 
-  const { data, error } = await supabaseClient
-    .from("children")
-    .select("*")
+    data.forEach(child => {
+      const li = document.createElement("li")
+      li.textContent = child.name + " - Grade " + child.grade + " Section " + child.section
+      list.appendChild(li)
+    })
 
-  console.log("Children data:", data)
-  console.log("Children error:", error)
-
-  if (error) {
-    console.log(error)
-    return
+  } catch (err) {
+    console.log(err)
   }
-
-  list.innerHTML = ""
-
-  data.forEach(child => {
-    const li = document.createElement("li")
-    li.textContent = child.name + " - Grade " + child.grade + " Section " + child.section
-    list.appendChild(li)
-  })
 }
 
 async function loadChildrenDropdown() {
   const dropdown = document.getElementById("childSelect")
   if (!dropdown) return
 
-  const { data, error } = await supabaseClient
-    .from("children")
-    .select("*")
+  try {
+    const data = await apiCall('/parent/children')
+    dropdown.innerHTML = ""
 
-  if (error) {
-    console.log(error)
-    return
+    data.forEach(child => {
+      const option = document.createElement("option")
+      option.value = child.id
+      option.textContent = child.name
+      dropdown.appendChild(option)
+    })
+
+  } catch (err) {
+    console.log(err)
   }
-
-  dropdown.innerHTML = ""
-
-  data.forEach(child => {
-    const option = document.createElement("option")
-    option.value = child.id
-    option.textContent = child.name
-    dropdown.appendChild(option)
-  })
 }
 
 // =====================
@@ -234,120 +198,84 @@ async function loadTeachers() {
   const dropdown = document.getElementById("teacherSelect")
   if (!dropdown) return
 
-  // ✅ FIX: join profiles with teachers table to get name + subject
-  const { data, error } = await supabaseClient
-    .from("teachers")
-    .select("id, subject, profiles(id, name, email)")
+  try {
+    const data = await apiCall('/parent/teachers')
+    dropdown.innerHTML = ""
 
-  if (error) {
-    console.log("Teachers fetch error:", error)
-    return
+    data.forEach(teacher => {
+      const option = document.createElement("option")
+      option.value = teacher.id
+      option.textContent = (teacher.profiles?.name || teacher.profiles?.email) + " - " + teacher.subject
+      dropdown.appendChild(option)
+    })
+
+  } catch (err) {
+    console.log(err)
   }
-
-  console.log("Teachers:", data)
-
-  dropdown.innerHTML = ""
-
-  data.forEach(teacher => {
-    const option = document.createElement("option")
-    option.value = teacher.id
-    // ✅ FIX: show teacher name and subject instead of just email
-    option.textContent = (teacher.profiles?.name || teacher.profiles?.email) + " - " + teacher.subject
-    dropdown.appendChild(option)
-  })
 }
 
 async function loadTeacherMeetings() {
   const container = document.getElementById("meetingsList")
   if (!container) return
 
-  const user = await supabaseClient.auth.getUser()
-  const teacherId = user.data.user.id
+  try {
+    const data = await apiCall('/teacher/meetings')
+    container.innerHTML = ""
 
-  // ✅ FIX: join with children and profiles to get child name and parent name
-  const { data, error } = await supabaseClient
-  .from("meetings")
-  .select(`
-    *,
-    children!meetings_child_id_fkey(name, grade, section, parent:parent_id(name))
-  `)
-  .eq("teacher_id", teacherId)
-  console.log("Meetings data:", JSON.stringify(data, null, 2))
+    data.forEach(meeting => {
+      const div = document.createElement("div")
+      div.innerHTML = `
+        <p><b>Child:</b> ${meeting.children?.name} (Grade ${meeting.children?.grade} - ${meeting.children?.section})</p>
+        <p><b>Parent:</b> ${meeting.children?.parent?.name || "N/A"}</p>
+        <p><b>Topic:</b> ${meeting.topic}</p>
+        <p><b>Time:</b> ${meeting.meeting_time}</p>
+        <p><b>Status:</b> ${meeting.status}</p>
+        <p><b>Notes:</b> ${meeting.teacher_notes || "No notes yet"}</p>
+        <button onclick="approveMeeting('${meeting.id}')">Approve</button>
+        <button onclick="rejectMeeting('${meeting.id}')">Reject</button>
+        <br><br>
+        <textarea id="notes_${meeting.id}" placeholder="Add notes...">${meeting.teacher_notes || ""}</textarea>
+        <button onclick="addNotes('${meeting.id}')">Save Notes</button>
+        <hr>
+      `
+      container.appendChild(div)
+    })
 
-  if (error) {
-    console.log(error)
-    return
+  } catch (err) {
+    console.log(err)
   }
-
-  container.innerHTML = ""
-
-  data.forEach(meeting => {
-    const div = document.createElement("div")
-    div.innerHTML = `
-  <p><b>Child:</b> ${meeting.children?.name} (Grade ${meeting.children?.grade} - ${meeting.children?.section})</p>
-  <p><b>Parent:</b> ${meeting.children?.parent?.name || "N/A"}</p>
-  <p><b>Topic:</b> ${meeting.topic}</p>
-  <p><b>Time:</b> ${meeting.meeting_time}</p>
-  <p><b>Status:</b> ${meeting.status}</p>
-  <p><b>Notes:</b> ${meeting.teacher_notes || "No notes yet"}</p>
-  <button onclick="approveMeeting('${meeting.id}')">Approve</button>
-  <button onclick="rejectMeeting('${meeting.id}')">Reject</button>
-  <br><br>
-  <textarea id="notes_${meeting.id}" placeholder="Add notes...">${meeting.teacher_notes || ""}</textarea>
-  <button onclick="addNotes('${meeting.id}')">Save Notes</button>
-  <hr>
-`
-    container.appendChild(div)
-  })
 }
 
 async function approveMeeting(meetingId) {
-  const { error } = await supabaseClient
-    .from("meetings")
-    .update({ status: "approved" })
-    .eq("id", meetingId)
-
-  if (error) {
-    console.log(error)
-    return
+  try {
+    await apiCall(`/teacher/meetings/${meetingId}/approve`, 'PATCH')
+    alert('Meeting Approved')
+    loadTeacherMeetings()
+  } catch (err) {
+    alert('Failed: ' + err.message)
   }
-
-  alert("Meeting Approved")
-  loadTeacherMeetings()
 }
 
 async function rejectMeeting(meetingId) {
-  const { error } = await supabaseClient
-    .from("meetings")
-    .update({ status: "rejected" })
-    .eq("id", meetingId)
-
-  if (error) {
-    console.log(error)
-    return
+  try {
+    await apiCall(`/teacher/meetings/${meetingId}/reject`, 'PATCH')
+    alert('Meeting Rejected')
+    loadTeacherMeetings()
+  } catch (err) {
+    alert('Failed: ' + err.message)
   }
-
-  alert("Meeting Rejected")
-  loadTeacherMeetings()
 }
 
-// ✅ NEW: teacher can add notes
 async function addNotes(meetingId) {
   const notes = document.getElementById("notes_" + meetingId).value
 
-  const { error } = await supabaseClient
-    .from("meetings")
-    .update({ teacher_notes: notes })
-    .eq("id", meetingId)
-
-  if (error) {
-    console.log(error)
-    alert("Failed to save notes")
-    return
+  try {
+    await apiCall(`/teacher/meetings/${meetingId}/notes`, 'PATCH', { teacher_notes: notes })
+    alert('Notes saved!')
+    loadTeacherMeetings()
+  } catch (err) {
+    alert('Failed: ' + err.message)
   }
-
-  alert("Notes saved!")
-  loadTeacherMeetings()
 }
 
 // =====================
@@ -356,7 +284,7 @@ async function addNotes(meetingId) {
 
 async function bookMeeting() {
   const childId = document.getElementById("childSelect").value
-  const teacherId = document.getElementById("teacherSelect").value  // ✅ FIX: was reading wrong element
+  const teacherId = document.getElementById("teacherSelect").value
   const meetingTime = document.getElementById("meetingTime").value
   const topic = document.getElementById("topic").value
 
@@ -365,75 +293,42 @@ async function bookMeeting() {
     return
   }
 
-  console.log("Booking meeting - Teacher:", teacherId, "Child:", childId)
-
-  // ✅ FIX: use supabaseClient not supabase
-  const { error } = await supabaseClient
-    .from("meetings")
-    .insert([{
+  try {
+    await apiCall('/parent/meetings', 'POST', {
       child_id: childId,
       teacher_id: teacherId,
       meeting_time: meetingTime,
-      topic: topic,
-      status: "pending"
-    }])
-
-  if (error) {
-    console.log("Booking error:", error)
-    alert("Failed to book meeting: " + error.message)
-    return
+      topic
+    })
+    alert('Meeting booked successfully!')
+  } catch (err) {
+    alert('Failed to book meeting: ' + err.message)
   }
-
-  alert("Meeting booked successfully!")
 }
 
 async function loadParentMeetings() {
   const container = document.getElementById("meetingList")
   if (!container) return
 
-  const user = await supabaseClient.auth.getUser()
-  const parentId = user.data.user.id
+  try {
+    const data = await apiCall('/parent/meetings')
+    container.innerHTML = ""
 
-  const { data: children, error: childError } = await supabaseClient
-    .from("children")
-    .select("id")
-    .eq("parent_id", parentId)
+    data.forEach(meeting => {
+      const div = document.createElement("div")
+      div.innerHTML = `
+        <p><b>Child:</b> ${meeting.children?.name}</p>
+        <p><b>Teacher:</b> ${meeting.teachers?.profiles?.name || "N/A"} (${meeting.teachers?.subject || ""})</p>
+        <p><b>Topic:</b> ${meeting.topic}</p>
+        <p><b>Time:</b> ${meeting.meeting_time}</p>
+        <p><b>Status:</b> ${meeting.status}</p>
+        <p><b>Teacher Notes:</b> ${meeting.teacher_notes || "No notes yet"}</p>
+        <hr>
+      `
+      container.appendChild(div)
+    })
 
-  if (childError || !children.length) {
-    container.innerHTML = "<p>No children found.</p>"
-    return
+  } catch (err) {
+    console.log(err)
   }
-
-  const childIds = children.map(child => child.id)
-
-  // ✅ FIX: join with profiles to get teacher name
-  const { data, error } = await supabaseClient
-    .from("meetings")
-    .select(`
-      *,
-      children(name),
-      teachers:teacher_id(subject, profiles(name))
-    `)
-    .in("child_id", childIds)
-
-  if (error) {
-    console.log(error)
-    return
-  }
-
-  container.innerHTML = ""
-
-  data.forEach(meeting => {
-    const div = document.createElement("div")
-    div.innerHTML = `
-      <p><b>Child:</b> ${meeting.children?.name}</p>
-      <p><b>Teacher:</b> ${meeting.teachers?.profiles?.name || "N/A"} (${meeting.teachers?.subject || ""})</p>
-      <p><b>Topic:</b> ${meeting.topic}</p>
-      <p><b>Time:</b> ${meeting.meeting_time}</p>
-      <p><b>Status:</b> ${meeting.status}</p>
-      <p><b>Teacher Notes:</b> ${meeting.teacher_notes || "No notes yet"}</p>
-      <hr>
-    `
-    container.appendChild(div)
-  })
 }

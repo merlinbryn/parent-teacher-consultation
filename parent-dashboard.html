@@ -43,35 +43,55 @@
   <hr>
   <a href="parent-meetings.html"><button>View My Meetings</button></a>
 
-  <script src="app.js"></script>
-  <script>
-    // Handle Google OAuth redirect
-    (async () => {
-      const { data: { session } } = await supabaseClient.auth.getSession()
-      if (session) {
-        const { data: profile } = await supabaseClient
+<script src="app.js"></script>
+<script>
+  (async () => {
+    // Handle Google OAuth redirect — get session and save token
+    const { data: { session } } = await supabaseClient.auth.getSession()
+    
+    if (session) {
+      // Save token to localStorage
+      localStorage.setItem('token', session.access_token)
+      localStorage.setItem('role', 'parent')
+
+      // Check if profile exists, if not create one
+      const { data: profile } = await supabaseClient
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single()
+
+      if (!profile) {
+        await supabaseClient
           .from('profiles')
-          .select('role')
-          .eq('id', session.user.id)
-          .single()
-
-        if (!profile) {
-          await supabaseClient
-            .from('profiles')
-            .insert([{
-              id: session.user.id,
-              email: session.user.email,
-              role: 'parent',
-              name: session.user.user_metadata.full_name
-            }])
-        }
+          .insert([{
+            id: session.user.id,
+            email: session.user.email,
+            role: 'parent',
+            name: session.user.user_metadata.full_name
+          }])
       }
-    })()
 
-    loadChildren()
-    loadChildrenDropdown()
-    loadTeachers()
-  </script>
+      // ✅ Load data AFTER token is saved
+      loadChildren()
+      loadChildrenDropdown()
+      loadTeachers()
+
+    } else {
+      // No Google session — check if email/password login token exists
+      const token = localStorage.getItem('token')
+      if (!token) {
+        window.location.href = 'login.html'
+        return
+      }
+
+      // Load data for email/password login
+      loadChildren()
+      loadChildrenDropdown()
+      loadTeachers()
+    }
+  })()
+</script>
 
 </body>
 </html>
