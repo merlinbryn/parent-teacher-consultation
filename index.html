@@ -1,17 +1,142 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Parent Teacher Platform</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduConnect | Parent-Teacher Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1e429f;
+      --accent: #f59e0b;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --bg: #f9fafb;
+      --white: #ffffff;
+    }
+ 
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+ 
+    .hero {
+      text-align: center;
+      max-width: 600px;
+    }
+ 
+    .logo {
+      width: 72px; height: 72px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      border-radius: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 36px;
+      margin: 0 auto 24px;
+      box-shadow: 0 8px 24px rgba(26,86,219,0.3);
+    }
+ 
+    .brand-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 42px;
+      color: var(--text);
+      letter-spacing: -1px;
+      margin-bottom: 16px;
+    }
+ 
+    .brand-name span { color: var(--primary); }
+ 
+    .subtitle {
+      font-size: 18px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 40px;
+    }
+ 
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'DM Sans', sans-serif;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+ 
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      box-shadow: 0 4px 12px rgba(26,86,219,0.3);
+    }
+ 
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(26,86,219,0.35);
+    }
+ 
+    .features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 60px;
+      max-width: 800px;
+      width: 100%;
+    }
+ 
+    .feature-card {
+      background: var(--white);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 24px;
+      text-align: left;
+    }
+ 
+    .feature-icon { font-size: 28px; margin-bottom: 12px; }
+    .feature-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+    .feature-desc { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+  </style>
 </head>
 <body>
-
-  <h1>Parent Teacher Consultation Platform</h1>
-  <p>Welcome! Please login or signup to continue.</p>
-
-  <button onclick="window.location.href='login.html'">Login / Signup</button>
-
-  <script src="app.js"></script>
-
+ 
+  <div class="hero">
+    <div class="logo">🎓</div>
+    <h1 class="brand-name">Edu<span>Connect</span></h1>
+    <p class="subtitle">A modern platform connecting parents and teachers for seamless consultation scheduling and academic progress tracking.</p>
+    <a href="login.html" class="btn btn-primary">Get Started →</a>
+  </div>
+ 
+  <div class="features">
+    <div class="feature-card">
+      <div class="feature-icon">📅</div>
+      <div class="feature-title">Easy Scheduling</div>
+      <div class="feature-desc">Book meetings with teachers in seconds, choose your preferred time slot.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-title">Secure & Private</div>
+      <div class="feature-desc">Role-based access ensures parents and teachers only see their own data.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📝</div>
+      <div class="feature-title">Teacher Feedback</div>
+      <div class="feature-desc">Receive detailed notes and feedback from teachers after every meeting.</div>
+    </div>
+  </div>
+ 
 </body>
-</html>
+</html
